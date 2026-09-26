@@ -1,4 +1,3 @@
-/// Metadata about a Companion Link PC daemon discovered on the local network.
 class DiscoveredDevice {
   const DiscoveredDevice({
     required this.deviceId,

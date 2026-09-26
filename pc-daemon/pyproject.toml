@@ -3,16 +3,32 @@ name = "companion_daemon"
 version = "0.1.0"
 description = ""
 authors = ["Iheb Kadri <ihebkadri70@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "companion_daemon" }]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
+zeroconf = "^0.132.2"
 bleak = "0.22.3"
-zeroconf = "0.132.2"
-cryptography = "43.0.0"
+cryptography = "^43.0.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^4.6"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+ruff = "^0.6.8"
+mypy = "^1.11.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+strict = true
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

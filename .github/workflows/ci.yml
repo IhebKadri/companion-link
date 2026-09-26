@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pc-daemon:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: pc-daemon
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Lint (ruff)
+        run: poetry run ruff check .
+
+      - name: Type check (mypy)
+        run: poetry run mypy companion_daemon
+
+      - name: Run tests
+        run: poetry run pytest -v
