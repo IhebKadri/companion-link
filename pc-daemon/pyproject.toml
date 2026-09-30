@@ -11,6 +11,10 @@ packages = [{ include = "companion_daemon" }]
 python = ">=3.10,<3.14"
 zeroconf = "^0.132.2"
 cryptography = "^43.0.0"
+fastapi = "^0.142.1"
+uvicorn = "^0.54.0"
+pystray = "^0.19.5"
+pillow = "^12.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
@@ -27,6 +31,14 @@ target-version = "py310"
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+module = "pystray"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "PIL.*"
+ignore_missing_imports = true
 
 [build-system]
 requires = ["poetry-core"]

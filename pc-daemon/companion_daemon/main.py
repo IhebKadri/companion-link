@@ -4,6 +4,7 @@ import asyncio
 import logging
 import signal
 
+import uvicorn
 from zeroconf.asyncio import AsyncZeroconf
 
 from companion_daemon.config import DiscoveryConfig, LoggingConfig
@@ -12,8 +13,13 @@ from companion_daemon.discovery import (
     DiscoveryService,
     ServiceRegistrationError,
 )
+from companion_daemon.tray import TrayIcon
+from companion_daemon.web_ui import app as web_app
 
 logger = logging.getLogger(__name__)
+
+WEB_UI_HOST = "127.0.0.1"
+WEB_UI_PORT = 8765
 
 
 def _configure_logging(config: LoggingConfig) -> None:
@@ -33,10 +39,14 @@ async def run() -> None:
         try:
             loop.add_signal_handler(sig, stop_event.set)
         except NotImplementedError:
-            pass
+            pass 
 
     zeroconf = AsyncZeroconf()
     zeroconf_client = AsyncZeroconfAdapter(zeroconf)
+    tray: TrayIcon | None = None
+    web_server: uvicorn.Server | None = None
+    web_server_task: asyncio.Task[None] | None = None
+
     try:
         async with DiscoveryService(discovery_config, zeroconf_client) as discovery:
             try:
@@ -45,7 +55,19 @@ async def run() -> None:
                 logger.exception("Could not start advertising — is the port already in use?")
                 return
 
-            logger.info("Companion Daemon running. Press Ctrl+C to stop.")
+            tray = TrayIcon()
+            tray.start()
+
+            web_server_config = uvicorn.Config(
+                web_app, host=WEB_UI_HOST, port=WEB_UI_PORT, log_level="warning"
+            )
+            web_server = uvicorn.Server(web_server_config)
+            web_server_task = asyncio.create_task(web_server.serve())
+
+            logger.info(
+                "Companion Daemon running. Web UI at http://%s:%d. Press Ctrl+C to stop.",
+                WEB_UI_HOST, WEB_UI_PORT,
+            )
             try:
                 await stop_event.wait()
             except KeyboardInterrupt:
@@ -53,6 +75,12 @@ async def run() -> None:
             finally:
                 logger.info("Shutting down...")
     finally:
+        if web_server is not None:
+            web_server.should_exit = True
+        if web_server_task is not None:
+            await web_server_task
+        if tray is not None:
+            tray.stop()
         await zeroconf.async_close()
 
 
