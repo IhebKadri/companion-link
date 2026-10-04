@@ -8,12 +8,16 @@ import uvicorn
 from zeroconf.asyncio import AsyncZeroconf
 
 from companion_daemon.config import DiscoveryConfig, LoggingConfig
+from companion_daemon.device_keys import get_or_create_identity_key
 from companion_daemon.discovery import (
     AsyncZeroconfAdapter,
     DiscoveryService,
     ServiceRegistrationError,
 )
+from companion_daemon.pairing_manager import PairingManager
+from companion_daemon.pairing_server import PairingServer
 from companion_daemon.tray import TrayIcon
+from companion_daemon.trusted_devices import TrustedDeviceStore
 from companion_daemon.web_ui import app as web_app
 
 logger = logging.getLogger(__name__)
@@ -46,6 +50,7 @@ async def run() -> None:
     tray: TrayIcon | None = None
     web_server: uvicorn.Server | None = None
     web_server_task: asyncio.Task[None] | None = None
+    pairing_server: PairingServer | None = None
 
     try:
         async with DiscoveryService(discovery_config, zeroconf_client) as discovery:
@@ -57,6 +62,14 @@ async def run() -> None:
 
             tray = TrayIcon()
             tray.start()
+
+            identity_key = get_or_create_identity_key()
+            trusted_store = TrustedDeviceStore()
+            pairing_manager = PairingManager(identity_key, trusted_store)
+            web_app.state.pairing_manager = pairing_manager
+
+            pairing_server = PairingServer(pairing_manager)
+            await pairing_server.start()
 
             web_server_config = uvicorn.Config(
                 web_app, host=WEB_UI_HOST, port=WEB_UI_PORT, log_level="warning"
@@ -75,6 +88,8 @@ async def run() -> None:
             finally:
                 logger.info("Shutting down...")
     finally:
+        if pairing_server is not None:
+            await pairing_server.stop()
         if web_server is not None:
             web_server.should_exit = True
         if web_server_task is not None:

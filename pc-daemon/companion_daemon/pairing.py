@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 logger = logging.getLogger(__name__)
 
 PAIRING_CODE_LENGTH = 6
-PAIRING_CODE_VALIDITY_SECONDS = 300  
+PAIRING_CODE_VALIDITY_SECONDS = 300 
 
 
 def generate_pairing_code() -> str:
@@ -25,8 +25,8 @@ def generate_pairing_code() -> str:
 @dataclass
 class PairingSession:
     code: str
+    private_key: X25519PrivateKey
     created_at: float = field(default_factory=time.monotonic)
-    private_key: X25519PrivateKey = field(default_factory=X25519PrivateKey.generate)
 
     def is_expired(self) -> bool:
         return (time.monotonic() - self.created_at) > PAIRING_CODE_VALIDITY_SECONDS
@@ -51,7 +51,6 @@ class PairingResult:
 def complete_pairing(
     session: PairingSession, submitted_code: str, peer_public_key_bytes: bytes
 ) -> PairingResult:
-
     if session.is_expired():
         raise PairingError("Pairing code has expired")
 

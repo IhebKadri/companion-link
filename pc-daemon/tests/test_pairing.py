@@ -21,11 +21,11 @@ def test_generate_pairing_code_is_six_digits():
 
 def test_generate_pairing_code_is_random():
     codes = {generate_pairing_code() for _ in range(20)}
-    assert len(codes) > 1 
+    assert len(codes) > 1
 
 
 def test_complete_pairing_succeeds_with_correct_code():
-    session = PairingSession(code="123456")
+    session = PairingSession(code="123456", private_key=X25519PrivateKey.generate())
     peer_key = X25519PrivateKey.generate()
     peer_public_bytes = peer_key.public_key().public_bytes_raw()
 
@@ -36,7 +36,7 @@ def test_complete_pairing_succeeds_with_correct_code():
 
 
 def test_complete_pairing_derives_matching_key_on_both_sides():
-    session = PairingSession(code="123456")
+    session = PairingSession(code="123456", private_key=X25519PrivateKey.generate())
     peer_private_key = X25519PrivateKey.generate()
     peer_public_bytes = peer_private_key.public_key().public_bytes_raw()
 
@@ -54,7 +54,7 @@ def test_complete_pairing_derives_matching_key_on_both_sides():
 
 
 def test_complete_pairing_rejects_wrong_code():
-    session = PairingSession(code="123456")
+    session = PairingSession(code="123456", private_key=X25519PrivateKey.generate())
     peer_public_bytes = X25519PrivateKey.generate().public_key().public_bytes_raw()
 
     with pytest.raises(PairingError, match="Incorrect"):
@@ -62,7 +62,11 @@ def test_complete_pairing_rejects_wrong_code():
 
 
 def test_complete_pairing_rejects_expired_session():
-    session = PairingSession(code="123456", created_at=time.monotonic() - 999999)
+    session = PairingSession(
+        code="123456",
+        private_key=X25519PrivateKey.generate(),
+        created_at=time.monotonic() - 999999,
+    )
     peer_public_bytes = X25519PrivateKey.generate().public_key().public_bytes_raw()
 
     with pytest.raises(PairingError, match="expired"):
@@ -70,7 +74,7 @@ def test_complete_pairing_rejects_expired_session():
 
 
 def test_complete_pairing_rejects_malformed_public_key():
-    session = PairingSession(code="123456")
+    session = PairingSession(code="123456", private_key=X25519PrivateKey.generate())
 
     with pytest.raises(PairingError, match="Invalid peer public key"):
         complete_pairing(session, "123456", b"not-a-valid-key")
