@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/discovery_test_screen.dart';
+import 'screens/pairing_screen.dart';
 
 void main() {
   runApp(const CompanionLinkApp());
@@ -14,7 +14,7 @@ class CompanionLinkApp extends StatelessWidget {
     return MaterialApp(
       title: 'Companion Link',
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      home: const DiscoveryTestScreen(),
+      home: const PairingScreen(),
     );
   }
 }
